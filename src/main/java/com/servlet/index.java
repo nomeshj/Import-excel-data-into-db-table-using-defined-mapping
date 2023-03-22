@@ -165,33 +165,7 @@ public class index extends HttpServlet {
 				+ "}"
 				+ "	</style>");
 		
-	
-		
-	    Set Load = new LinkedHashSet();
-	    
-	    File f1 = new File("E://Excel//DataLoadMaps.xlsx");
-	    Workbook workbook = null;
-		try {
-			workbook = WorkbookFactory.create(f1);
-		} catch (EncryptedDocumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	    
-	    Sheet sheet = workbook.getSheetAt(0);
-	    
-	    DataFormatter dataFormatter = new DataFormatter();
-
-	    System.out.println("\n\nIterating over Rows and Columns using Iterator\n");
-	    Iterator<Row> rowIterator = sheet.rowIterator();
-	    
-	    int index = 0;
+		int index = 0;
 	    int match = 0;
 	    boolean flag = false;
 	    
@@ -199,32 +173,28 @@ public class index extends HttpServlet {
 	    Statement st = null;
 	    ResultSet rs = null;
 	    JSONObject json = new JSONObject();
+		
+	    Set Load = new LinkedHashSet();
+	    Workbook workbook = null;
+	    Sheet sheet = null;
+	    Iterator<Row> rowIterator = null;
+	    DataFormatter dataFormatter = null;
 	    
-	    while (rowIterator.hasNext()) {
-	        Row row = rowIterator.next();
-
-	        // Now let's iterate over the columns of the current row
-	        Iterator<Cell> cellIterator = row.cellIterator();
-			index=0;
-			flag = false;
-	        while (cellIterator.hasNext()) {
-	        	index++;
-	            Cell cell = cellIterator.next();
-	            String cellValue = dataFormatter.formatCellValue(cell);
-	            System.out.print(cellValue + "\t");
-	            
-	            if(cellValue.equalsIgnoreCase("loadname"))
-	            {
-	            	match = index;
-	            	flag = true;
-	            }
-	            if(match == index && !flag)
-	            {
-	            	Load.add(cellValue);
-	            }
-	        }
-	        System.out.println();
+	    try {
+	    Class.forName("oracle.jdbc.driver.OracleDriver");
+		con = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "system", "system");
+		
+		st = con.createStatement();
+		rs = st.executeQuery("SELECT LOADNAME FROM DATALOADMAP");
+		
+		while(rs.next()) {
+			Load.add(rs.getString(1));
+		}
+		
+	    }catch(Exception e) {
+	    	e.printStackTrace();
 	    }
+	    
 	        System.out.println("Load "+Load.toString());
 	        	        
 	        out.write("<div style=\"\r\n"
@@ -308,9 +278,7 @@ public class index extends HttpServlet {
 	        	int matchIndex = 0;
 	        	
 	        	int viewColumnIndex = 0;
-	        	
-	        	rowIterator = sheet.rowIterator();
-
+	       
 	        	
 	        	Map<Integer,String> columns = new TreeMap();
 	        	Map<Integer,String> fileCol = new TreeMap();
@@ -337,9 +305,7 @@ public class index extends HttpServlet {
 	        	int failedRows = 0;
 	        	int proxyUsed=0;
 	        	
-	        	
-	        	
-	        	
+       	
 	        	try {
 					Class.forName("oracle.jdbc.driver.OracleDriver");
 					con = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "system", "system");
@@ -348,13 +314,67 @@ public class index extends HttpServlet {
 					e2.printStackTrace();
 				}
 	        	try {
-	        	while (rowIterator.hasNext()) {
+	        	
+	        		st = con.createStatement();
+	        		rs = st.executeQuery("SELECT * FROM DATALOADMAP");
+	        	
+	        		ResultSetMetaData rsmd = rs.getMetaData();
+	        		int columnCount = rsmd.getColumnCount();
+	        		System.out.println("columnCount = "+columnCount);
+	        		// The column count starts from 1
+	        		for (int c = 1; c <= columnCount; c++ ) {
+	        			
+	        			 boolean flag1= false;
+//	 	    	        boolean tableCheck = false;
+	 	    	        boolean columnCheck = false;
+	        			
+	        		  String cellValue = rsmd.getColumnName(c);
+	        		  
+	    	            if(cellValue.equalsIgnoreCase("viewColName"))
+	    	            {
+	    	            	matchIndex=c;
+	    	            	flag1 = true;
+	    	            	System.out.println("viewColName");
+	    	            }
+	    	            if(cellValue.equalsIgnoreCase("viewOrder"))
+	    	            {
+	    	            	System.out.println("vieworder");
+	    	            	viewOrderIndex = c;
+	    	            }
+	    	            if(cellValue.equalsIgnoreCase("tableName"))
+	    	            {
+	    	            	System.out.println("tableName");
+	    	            	tableNameIndex = c;
+	    	            }
+	    	            if(cellValue.equalsIgnoreCase("tableColumn"))
+	    	            {
+	    	            	System.out.println("tableColumn");
+	    	            	tableColumnIndex = c;
+	    	            }
+	    	            if(cellValue.equalsIgnoreCase("fileCol"))
+	    	            {
+	    	            	System.out.println("fileCol");
+	    	            	fileColIndex = c;
+	    	            	System.out.println("filecolIndex = "+fileColIndex);
+	    	            }
+	    	            if(cellValue.equalsIgnoreCase("tableColFmt"))
+	    	            {
+	    	            	System.out.println("format");
+	    	            	formatIndex = c;
+	    	            	System.out.println("formatIndex = "+formatIndex);
+	    	            }
+	    	            if(cellValue.equalsIgnoreCase("proxy"))
+	    	            {
+	    	            	System.out.println("proxy");
+	    	            	proxyIndex = c;
+	    	            	System.out.println("proxyIndex = "+proxyIndex);
+	    	            }
+	        		  
+	        		}
+	        	while(rs.next()) {
 	        		
 	        		boolean viewOrderError = false;
-				      
-	    	        Row row = rowIterator.next();
-
-	    	        Iterator<Cell> cellIterator = row.cellIterator();
+				     
 	    	        boolean flag1= false;
 	    	        boolean tableCheck = false;
 	    	        boolean columnCheck = false;
@@ -362,73 +382,30 @@ public class index extends HttpServlet {
 	    	        viewIndex = 0;
 	    	        String fileColName = null;
 	    	        int viewOrder = 0;
-	    	        while (cellIterator.hasNext()) {
+	    	        System.out.println("-----------------------------------------------------");
+	        		for (int c = 1; c <= columnCount; c++ ) {
 	    	        	viewIndex++;
-	    	            Cell cell = cellIterator.next();
-	    	            String cellValue = dataFormatter.formatCellValue(cell);
+	    	            String cellValue = rs.getString(c);
 	    	            String format = null;
 	    	            
-	    	            
-	    	            if(cellValue.equalsIgnoreCase(request.getParameter("load1")))
-	    	            {
+	    	            if(rs.getString(1).equalsIgnoreCase(request.getParameter("load1"))) {
 	    	            	tableCheck = true;
 	    	            }
-	    	            if(cellValue.equalsIgnoreCase("viewColName"))
-	    	            {
-	    	            	matchIndex=viewIndex;
-	    	            	flag1 = true;
-	    	            	System.out.println("viewColName");
-	    	            }
-	    	            if(cellValue.equalsIgnoreCase("viewOrder"))
-	    	            {
-	    	            	System.out.println("vieworder");
-	    	            	viewOrderIndex = viewIndex;
-	    	            }
-	    	            if(cellValue.equalsIgnoreCase("tableName"))
-	    	            {
-	    	            	System.out.println("tableName");
-	    	            	tableNameIndex = viewIndex;
-	    	            }
-	    	            if(cellValue.equalsIgnoreCase("tableColumn"))
-	    	            {
-	    	            	System.out.println("tableColumn");
-	    	            	tableColumnIndex = viewIndex;
-	    	            }
-	    	            if(cellValue.equalsIgnoreCase("fileCol"))
-	    	            {
-	    	            	System.out.println("fileCol");
-	    	            	fileColIndex = viewIndex;
-	    	            	System.out.println("filecolIndex = "+fileColIndex);
-	    	            }
-	    	            if(cellValue.equalsIgnoreCase("tableColFmt"))
-	    	            {
-	    	            	System.out.println("format");
-	    	            	formatIndex = viewIndex;
-	    	            	System.out.println("formatIndex = "+formatIndex);
-	    	            }
-	    	            if(cellValue.equalsIgnoreCase("proxy"))
-	    	            {
-	    	            	System.out.println("proxy");
-	    	            	proxyIndex = viewIndex;
-	    	            	System.out.println("proxyIndex = "+proxyIndex);
-	    	            }
+	    	            
+	    	            System.out.println("cellValue = "+cellValue);
 	    	            if(tableCheck && viewOrderIndex == viewIndex && !flag1 && cellValue.equalsIgnoreCase("NULL"))
 	    	            {
 	    	            	String val = null;
 	    	            	if(cellValue.equalsIgnoreCase("NULL")) {
 	    	            		proxyUsed++;
-	    	            		val = row.getCell(proxyIndex).toString();
-	    	            	}
-	    	            	try {
-	    	            	viewOrder = Integer.parseInt(val);
-	    	            	}catch(Exception e)
-	    	            	{	
+	    	            		val = rs.getString(proxyIndex);
 	    	            		status = "Fail";
-	    	            		error = e.getMessage();
+	    	            		error = "fail";
 	    	            		viewOrderError = true;
 	    	            		failedRows++;
 	    	            		columnCheck = true;
 	    	            	}
+
 	    	            	System.out.println("&&&&&&&&&&&&&&&&&&&&&& "+viewOrderError+"   "+viewOrder);
 	    	            }
 	    	            if(tableCheck && viewOrderIndex == viewIndex && !flag1 && !columnCheck)
@@ -450,7 +427,7 @@ public class index extends HttpServlet {
 	    	            		
 	    	            	format = cellValue;
 	    	            	if(cellValue.equalsIgnoreCase("NULL") && !viewOrderError)
-	    	            		format = row.getCell(proxyIndex).toString();
+	    	            		format = rs.getString(proxyIndex);
 	    	            	tableFormat.put(viewOrder, format);
 	    	            }
 	    	            if(tableCheck && tableNameIndex == viewIndex && !flag1 && !columnCheck)
@@ -464,7 +441,6 @@ public class index extends HttpServlet {
 	    	            	
 	    	            	if(!viewOrderError)
 	    	            	{
-	    	            		System.out.println("tabelColumnindex = "+dataFormatter.formatCellValue(cell)+"  "+tableColumnIndex);	
 	    	            		System.out.println("*******************************");
 	    	            		System.out.println(viewOrder+"  "+cellValue+"  "+viewOrderError );
 	    	            		System.out.println("*******************************");
@@ -477,13 +453,13 @@ public class index extends HttpServlet {
 	    	            	
 	    	            	if(cellValue.equalsIgnoreCase("NULL") && !viewOrderError)
 	    	            	{
-	    	            		columns.put(viewOrder,row.getCell(proxyIndex).toString());
+	    	            		columns.put(viewOrder,rs.getString(proxyIndex));
 	    	            	}else {
 	    	            		columns.put(viewOrder,cellValue);	    	            		
 	    	            	}
 	    	            	if(cellValue.equalsIgnoreCase("NULL") && !viewOrderError)
 	    	            	{
-	    	            		fileCol.put(viewOrder,row.getCell(proxyIndex).toString());
+	    	            		fileCol.put(viewOrder,rs.getString(proxyIndex));
 	    	            	}else {
 	    	            		fileCol.put(viewOrder,fileColName);	    	            		
 	    	            	}
@@ -491,8 +467,8 @@ public class index extends HttpServlet {
 	    	            }
 
 	    	           System.out.println("check"+tableCheck);
-	    	           
 	    	        }
+	        		System.out.println("-----------------------------------------------------");
 	    	        System.out.println();
 	    	    }
 	        	}catch(Exception e)
@@ -556,7 +532,7 @@ public class index extends HttpServlet {
 	        	System.out.println("");
 				for(int j =1;j<=tableColumn.size();j++) {
 					String column = (String) tableColumn.get(j);
-
+					System.out.println(tableColumn.get(j));
 					if(column.contains("s"))
 						cols.add(" "+column+" varchar2(255)");
 					if(column.contains("d"))
@@ -641,9 +617,6 @@ public class index extends HttpServlet {
 	    	        }
 					else {
 						boolean dataCheck = false;
-						
-						
-						
 						
 						if(!createCheck)
 						{
@@ -865,7 +838,11 @@ public class index extends HttpServlet {
 
 							}
 							out.write("</tr>");
-						}else {
+							json.put(String.valueOf(count), val);
+							count++;
+							
+							val = new StringBuffer();
+						}
 						
 					
 						System.out.println("tableColun = "+tableColumn);
@@ -878,8 +855,11 @@ public class index extends HttpServlet {
 
 						System.out.println(count+"==="+val);
 						out.write("</tr>");
-						}
+						
 						json.put(String.valueOf(count), val);
+						
+						
+						
 						if(rs.isLast())
 						{							
 							out.write("</table>");
@@ -1102,7 +1082,7 @@ public class index extends HttpServlet {
 			int rows = sheet.getLastRowNum();
 			System.out.println("rows = "+rows);
 			System.out.println("name="+request.getParameter("load1"));
-			 response.sendRedirect("index?Totalrows="+(rows-1)+"&load1="+request.getParameter("load1")+"&file="+fileName);
+			 response.sendRedirect("index?Totalrows="+(rows)+"&load1="+request.getParameter("load1")+"&file="+fileName);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
